@@ -18,8 +18,9 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package kankan.wheel;
+package kankan.wheel.widget;
 
+import kankan.wheel.R;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -40,7 +41,7 @@ import android.view.View;
  * 
  * @author Yuri Kanivets
  */
-public class NumericWheel extends View {
+public class WheelView extends View {
 	/** Current value & label text color */
 	private static final int VALUE_TEXT_COLOR = 0xE0000000;
 
@@ -73,9 +74,12 @@ public class NumericWheel extends View {
 	private static final int DEF_VISIBLE_ITEMS = 5;
 
 	// Wheel Values
-	private int minValue = 0;
-	private int maxValue = 9;
-	private int currentValue = 3;
+	private WheelAdapter adapter = new NumericWheelAdapter(); // to do: do not initialize it
+	private int currentItem = 0;
+	
+	// Widths
+	private int itemsWidth = 0;
+	private int labelWidth = 0;
 
 	// Count of visible items
 	private int visibleItems = DEF_VISIBLE_ITEMS;
@@ -103,64 +107,41 @@ public class NumericWheel extends View {
 	/**
 	 * Constructor
 	 */
-	public NumericWheel(Context context, AttributeSet attrs, int defStyle) {
+	public WheelView(Context context, AttributeSet attrs, int defStyle) {
 		super(context, attrs, defStyle);
 	}
 
 	/**
 	 * Constructor
 	 */
-	public NumericWheel(Context context, AttributeSet attrs) {
+	public WheelView(Context context, AttributeSet attrs) {
 		super(context, attrs);
 	}
 
 	/**
 	 * Constructor
 	 */
-	public NumericWheel(Context context) {
+	public WheelView(Context context) {
 		super(context);
 	}
 
 	/**
-	 * Gets min value
-	 * 
-	 * @return the min value
+	 * Gets wheel adapter
+	 * @return the adapter
 	 */
-	public int getMinValue() {
-		return minValue;
+	public WheelAdapter getAdapter() {
+		return adapter;
 	}
-
+	
 	/**
-	 * Sets min value
-	 * 
-	 * @param value
-	 *            the min value to set
+	 * Sets whell adapter
+	 * @param adapter the new wheel adapter
 	 */
-	public void setMinValue(int value) {
-		minValue = value;
+	public void setAdapter(WheelAdapter adapter) {
+		this.adapter = adapter;
 		invalidate();
 	}
-
-	/**
-	 * Gets max value
-	 * 
-	 * @return the max value
-	 */
-	public int getMaxValue() {
-		return maxValue;
-	}
-
-	/**
-	 * Sets max value
-	 * 
-	 * @param value
-	 *            the max value to set
-	 */
-	public void setMaxValue(int value) {
-		maxValue = value;
-		invalidate();
-	}
-
+	
 	/**
 	 * Gets count of visible items
 	 * 
@@ -207,20 +188,20 @@ public class NumericWheel extends View {
 	 * 
 	 * @return the current value
 	 */
-	public int getValue() {
-		return currentValue;
+	public int getCurrentItem() {
+		return currentItem;
 	}
 
 	/**
-	 * Sets current value
+	 * Sets the current item
 	 * 
-	 * @param value the value to set
+	 * @param index the item index
 	 */
-	public void setValue(int value) {
-		if (value != currentValue && value >= minValue && value <= maxValue) {
+	public void setCurrentItem(int index) {
+		if (index != currentItem) {
 			itemsLayout = null;
 			valueLayout = null;
-			currentValue = value;
+			currentItem = index;
 			invalidate();
 		}
 	}
@@ -287,20 +268,29 @@ public class NumericWheel extends View {
 	 * @return the text
 	 */
 	private String buildText() {
+		WheelAdapter adapter = getAdapter();
 		StringBuilder itemsText = new StringBuilder();
 		int addItems = visibleItems / 2;
-		for (int i = currentValue - addItems; i < currentValue; i++) {
-			if (i >= minValue) {
-				itemsText.append(Integer.toString(i));
+		for (int i = currentItem - addItems; i < currentItem; i++) {
+			if (i >= 0 && adapter != null) {
+				String text = adapter.getItem(i);
+				if (text != null) {
+					itemsText.append(text);
+				}
 			}
 			itemsText.append("\n");
 		}
+		
 		itemsText.append("\n"); // here will be current value
-		for (int i = currentValue + 1; i <= currentValue + addItems; i++) {
-			if (i <= maxValue) {
-				itemsText.append(Integer.toString(i));
+		
+		for (int i = currentItem + 1; i <= currentItem + addItems; i++) {
+			if (adapter != null && i < adapter.getItemsCount()) {
+				String text = adapter.getItem(i);
+				if (text != null) {
+					itemsText.append(text);
+				}
 			}
-			if (i < currentValue + addItems) {
+			if (i < currentItem + addItems) {
 				itemsText.append("\n");
 			}
 		}
@@ -308,21 +298,31 @@ public class NumericWheel extends View {
 	}
 
 	/**
-	 * Returns the text with max length that can be present
-	 * @return the text
+	 * Returns the max item length that can be present
+	 * @return the max length
 	 */
-	private String getMaxText() {
-		StringBuilder builder = new StringBuilder();
-		int count = Integer.toString(
-				Math.max(Math.abs(minValue), Math.abs(maxValue))).length();
-		for (int i = 0; i < count; i++) {
-			builder.append("0");
+	private int getMaxTextLength() {
+		WheelAdapter adapter = getAdapter();
+		if (adapter == null) {
+			return 0;
 		}
-		if (minValue < 0) {
-			builder.insert(0, "-");
+		
+		int adapterLength = adapter.getMaximumLength();
+		if (adapterLength > 0) {
+			return adapterLength;
 		}
 
-		return builder.toString();
+		String maxText = null;
+		int addItems = visibleItems / 2;
+		for (int i = Math.max(currentItem - addItems, 0);
+				i < Math.min(currentItem + visibleItems, adapter.getItemsCount()); i++) {
+			String text = adapter.getItem(i);
+			if (text != null && (maxText == null || maxText.length() < text.length())) {
+				maxText = text;
+			}
+		}
+
+		return maxText != null ? maxText.length() : 0;
 	}
 
 	/**
@@ -336,14 +336,18 @@ public class NumericWheel extends View {
 
 		int width = widthSize;
 
-		int widthItems = (int) FloatMath.ceil(Layout.getDesiredWidth(
-				getMaxText(), itemsPaint));
-		widthItems += ADDITIONAL_ITEMS_SPACE; // make it some more
+		int maxLength = getMaxTextLength();
+		if (maxLength > 0) {
+			float textWidth = FloatMath.ceil(Layout.getDesiredWidth("0", itemsPaint));
+			itemsWidth = (int) (maxLength * textWidth);
+		} else {
+			itemsWidth = 0;
+		}
+		itemsWidth += ADDITIONAL_ITEMS_SPACE; // make it some more
 
-		int widthLabel = 0;
+		labelWidth = 0;
 		if (label != null && label.length() > 0) {
-			widthLabel = (int) FloatMath.ceil(Layout.getDesiredWidth(
-					label, valuePaint));
+			labelWidth = (int) FloatMath.ceil(Layout.getDesiredWidth(label, valuePaint));
 		}
 
 		boolean recalculate = false;
@@ -351,8 +355,8 @@ public class NumericWheel extends View {
 			width = widthSize;
 			recalculate = true;
 		} else {
-			width = widthItems + widthLabel + 2 * PADDING;
-			if (widthLabel > 0) {
+			width = itemsWidth + labelWidth + 2 * PADDING;
+			if (labelWidth > 0) {
 				width += LABEL_OFFSET;
 			}
 
@@ -368,17 +372,22 @@ public class NumericWheel extends View {
 		if (recalculate) {
 			// recalculate width
 			int pureWidth = width - LABEL_OFFSET - 2 * PADDING;
-			if (widthLabel > 0) {
-				double newWidthItems = (double) widthItems * pureWidth
-						/ (widthItems + widthLabel);
-				widthItems = (int) newWidthItems;
-				widthLabel = pureWidth - widthItems;
+			if (pureWidth <= 0) {
+				itemsWidth = labelWidth = 0;
+			}
+			if (labelWidth > 0) {
+				double newWidthItems = (double) itemsWidth * pureWidth
+						/ (itemsWidth + labelWidth);
+				itemsWidth = (int) newWidthItems;
+				labelWidth = pureWidth - itemsWidth;
 			} else {
-				widthItems = pureWidth + LABEL_OFFSET; // no label
+				itemsWidth = pureWidth + LABEL_OFFSET; // no label
 			}
 		}
 
-		createLayouts(widthItems, widthLabel);
+		if (itemsWidth > 0) {
+			createLayouts(itemsWidth, labelWidth);
+		}
 
 		return width;
 	}
@@ -398,7 +407,8 @@ public class NumericWheel extends View {
 		}
 
 		if (valueLayout == null || valueLayout.getWidth() > widthItems) {
-			valueLayout = new StaticLayout(Integer.toString(currentValue),
+			String text = getAdapter() != null ? getAdapter().getItem(currentItem) : null;
+			valueLayout = new StaticLayout(text != null ? text : "",
 					valuePaint, widthItems, widthLabel > 0 ?
 							Layout.Alignment.ALIGN_OPPOSITE : Layout.Alignment.ALIGN_CENTER,
 							1, ADDITIONAL_ITEM_HEIGHT, false);
@@ -445,17 +455,23 @@ public class NumericWheel extends View {
 		super.onDraw(canvas);
 
 		if (itemsLayout == null) {
-			calculateLayoutWidth(getWidth(), MeasureSpec.EXACTLY);
+			if (itemsWidth == 0) {
+				calculateLayoutWidth(getWidth(), MeasureSpec.EXACTLY);
+			} else {
+				createLayouts(itemsWidth, labelWidth);
+			}
 		}
 
 		drawCenterRect(canvas);
-
-		canvas.save();
-		// Skip padding space and hide a part of top and bottom items
-		canvas.translate(PADDING, -ITEM_OFFSET);
-		drawItems(canvas);
-		drawValue(canvas);
-		canvas.restore();
+		
+		if (itemsWidth > 0) {
+			canvas.save();
+			// Skip padding space and hide a part of top and bottom items
+			canvas.translate(PADDING, -ITEM_OFFSET);
+			drawItems(canvas);
+			drawValue(canvas);
+			canvas.restore();
+		}
 
 		drawShadows(canvas);
 	}
@@ -522,6 +538,11 @@ public class NumericWheel extends View {
 
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
+		WheelAdapter adapter = getAdapter();
+		if (adapter == null) {
+			return true;
+		}
+		
 		switch (event.getAction()) {
 		case MotionEvent.ACTION_DOWN:
 			lastYTouch = event.getY();
@@ -530,12 +551,12 @@ public class NumericWheel extends View {
 		case MotionEvent.ACTION_MOVE:
 			float delta = event.getY() - lastYTouch;
 			int count = (int) (visibleItems * delta / getHeight());
-			int pos = currentValue - count;
-			pos = Math.max(pos, minValue);
-			pos = Math.min(pos, maxValue);
-			if (pos != currentValue) {
+			int pos = currentItem - count;
+			pos = Math.max(pos, 0);
+			pos = Math.min(pos, adapter.getItemsCount());
+			if (pos != currentItem) {
 				lastYTouch = event.getY();
-				setValue(pos);
+				setCurrentItem(pos);
 			}
 			break;
 		case MotionEvent.ACTION_UP:

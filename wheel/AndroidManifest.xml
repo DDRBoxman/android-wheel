@@ -24,19 +24,25 @@
       
     <application android:icon="@drawable/icon" android:label="WheelDemo">
 
-		<activity android:name="WheelDemo">
+		<activity android:name="kankan.wheel.demo.WheelDemo">
 		    <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 		</activity>
-		<activity android:name="TimeActivity" android:label="Time">
+		<activity android:name="kankan.wheel.demo.TimeActivity" android:label="Time">
 		    <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="kankan.wheel.WHEEL_SAMPLE"/>
             </intent-filter>
 		</activity>
-		<activity android:name="PasswActivity" android:label="Password">
+		<activity android:name="kankan.wheel.demo.PasswActivity" android:label="Password">
+		    <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="kankan.wheel.WHEEL_SAMPLE"/>
+            </intent-filter>
+		</activity>
+		<activity android:name="kankan.wheel.demo.CitiesActivity" android:label="Cities">
 		    <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="kankan.wheel.WHEEL_SAMPLE"/>

@@ -17,11 +17,13 @@ public final class R {
         public static final int wheel_val=0x7f020003;
     }
     public static final class id {
-        public static final int hour=0x7f040000;
-        public static final int mins=0x7f040001;
+        public static final int city=0x7f040000;
+        public static final int hour=0x7f040001;
+        public static final int mins=0x7f040002;
     }
     public static final class layout {
-        public static final int passw_layout=0x7f030000;
-        public static final int time_layout=0x7f030001;
+        public static final int cities_layout=0x7f030000;
+        public static final int passw_layout=0x7f030001;
+        public static final int time_layout=0x7f030002;
     }
 }

@@ -15,30 +15,27 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package kankan.wheel;
+package kankan.wheel.demo;
 
-import java.util.Calendar;
+import kankan.wheel.R;
+import kankan.wheel.widget.ArrayWheelAdapter;
+import kankan.wheel.widget.WheelView;
 
 import android.app.Activity;
 import android.os.Bundle;
 
-public class TimeActivity extends Activity {
+public class CitiesActivity extends Activity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        setContentView(R.layout.time_layout);
+        setContentView(R.layout.cities_layout);
         
-        NumericWheel hours = (NumericWheel) findViewById(R.id.hour);
-        hours.setMaxValue(23);
-        hours.setLabel("hour");
-        
-        NumericWheel mins = (NumericWheel) findViewById(R.id.mins);
-        mins.setMaxValue(59);
-        mins.setLabel("mins");
-        
-        Calendar c = Calendar.getInstance();
-        mins.setValue(c.get(Calendar.MINUTE));
-        hours.setValue(c.get(Calendar.HOUR_OF_DAY));
+        WheelView city = (WheelView) findViewById(R.id.city);
+        String cities[] = new String[] {"New York", "Washington", "Chicago",
+        		"Los Angeles", "Atlanta", "Boston", "Miami", "Orlando"};
+        city.setAdapter(new ArrayWheelAdapter<String>(cities));
+        city.setVisibleItems(7);
+        city.setCurrentItem(5);
     }
 }

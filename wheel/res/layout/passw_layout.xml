@@ -19,7 +19,8 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
 	android:layout_height="wrap_content"
 	android:orientation="vertical"
-	android:background="@drawable/layout_bg" android:layout_width="fill_parent">
+	android:background="@drawable/layout_bg"
+	android:layout_width="fill_parent">
 	
 	<TextView
 		android:layout_width="wrap_content"
@@ -30,31 +31,31 @@
 		android:text="Please enter password"/>
 		
 	<LinearLayout
-		android:layout_marginTop="8dp"
+		android:layout_marginTop="24dp"
 		android:layout_gravity="center_horizontal"
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content">
 		
-		<kankan.wheel.NumericWheel
+		<kankan.wheel.widget.WheelView
 			android:layout_height="wrap_content"
 			android:layout_width="wrap_content"/>
-		<kankan.wheel.NumericWheel
+		<kankan.wheel.widget.WheelView
 			android:layout_height="wrap_content"
 			android:layout_width="wrap_content"/>
-		<kankan.wheel.NumericWheel
+		<kankan.wheel.widget.WheelView
 			android:layout_height="wrap_content"
 			android:layout_width="wrap_content"/>
-		<kankan.wheel.NumericWheel
+		<kankan.wheel.widget.WheelView
 			android:layout_height="wrap_content"
 			android:layout_width="wrap_content"/>
 	</LinearLayout>
 	
-	<Button
+	<!-- Button
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
 		android:layout_gravity="center_horizontal"
 		android:layout_marginTop="12dp"
 		android:textSize="18sp"
-		android:text="Check password"/>
+		android:text="Check password"/-->
 
 </LinearLayout>
