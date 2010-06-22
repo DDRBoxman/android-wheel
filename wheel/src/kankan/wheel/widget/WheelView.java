@@ -283,7 +283,7 @@ public class WheelView extends View {
 		
 		itemsText.append("\n"); // here will be current value
 		
-		for (int i = currentItem + 1; i <= currentItem + addItems; i++) {
+		for (int i = currentItem + 1; i < currentItem + addItems; i++) {
 			if (adapter != null && i < adapter.getItemsCount()) {
 				String text = adapter.getItem(i);
 				if (text != null) {
