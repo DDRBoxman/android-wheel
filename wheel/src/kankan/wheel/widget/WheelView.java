@@ -74,7 +74,7 @@ public class WheelView extends View {
 	private static final int DEF_VISIBLE_ITEMS = 5;
 
 	// Wheel Values
-	private WheelAdapter adapter = new NumericWheelAdapter(); // to do: do not initialize it
+	private WheelAdapter adapter = null;
 	private int currentItem = 0;
 	
 	// Widths
@@ -283,7 +283,7 @@ public class WheelView extends View {
 		
 		itemsText.append("\n"); // here will be current value
 		
-		for (int i = currentItem + 1; i < currentItem + addItems; i++) {
+		for (int i = currentItem + 1; i <= currentItem + addItems; i++) {
 			if (adapter != null && i < adapter.getItemsCount()) {
 				String text = adapter.getItem(i);
 				if (text != null) {
@@ -553,7 +553,7 @@ public class WheelView extends View {
 			int count = (int) (visibleItems * delta / getHeight());
 			int pos = currentItem - count;
 			pos = Math.max(pos, 0);
-			pos = Math.min(pos, adapter.getItemsCount());
+			pos = Math.min(pos, adapter.getItemsCount() - 1);
 			if (pos != currentItem) {
 				lastYTouch = event.getY();
 				setCurrentItem(pos);

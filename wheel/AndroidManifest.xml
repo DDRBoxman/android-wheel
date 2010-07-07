@@ -48,6 +48,12 @@
                 <category android:name="kankan.wheel.WHEEL_SAMPLE"/>
             </intent-filter>
 		</activity>
+		<activity android:name="kankan.wheel.demo.EmptyActivity" android:label="Empty wheel">
+		    <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="kankan.wheel.WHEEL_SAMPLE"/>
+            </intent-filter>
+		</activity>
 
     </application>
 

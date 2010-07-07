@@ -36,16 +36,16 @@
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content">
 		
-		<kankan.wheel.widget.WheelView
+		<kankan.wheel.widget.WheelView android:id="@+id/passw_1"
 			android:layout_height="wrap_content"
 			android:layout_width="wrap_content"/>
-		<kankan.wheel.widget.WheelView
+		<kankan.wheel.widget.WheelView android:id="@+id/passw_2"
 			android:layout_height="wrap_content"
 			android:layout_width="wrap_content"/>
-		<kankan.wheel.widget.WheelView
+		<kankan.wheel.widget.WheelView android:id="@+id/passw_3"
 			android:layout_height="wrap_content"
 			android:layout_width="wrap_content"/>
-		<kankan.wheel.widget.WheelView
+		<kankan.wheel.widget.WheelView android:id="@+id/passw_4"
 			android:layout_height="wrap_content"
 			android:layout_width="wrap_content"/>
 	</LinearLayout>
