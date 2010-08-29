@@ -1,6 +1,6 @@
 /*
  *  Android Wheel Control.
- *  http://android-devblog.blogspot.com/2010/05/wheel-ui-contol.html
+ *  https://code.google.com/p/android-wheel/
  *  
  *  Copyright 2010 Yuri Kanivets
  *
@@ -18,6 +18,9 @@
  */
 
 package kankan.wheel.widget;
+
+import java.util.LinkedList;
+import java.util.List;
 
 import kankan.wheel.R;
 import android.content.Context;
@@ -102,6 +105,13 @@ public class WheelView extends View {
 
 	// Last touch Y position
 	private float lastYTouch;
+	
+	// scrolling
+	private boolean isScrollingPerformed; 
+	
+	// listeners
+	private List<OnWheelChangedListener> changingListeners = new LinkedList<OnWheelChangedListener>();
+	private List<OnWheelScrollListener> scrollingListeners = new LinkedList<OnWheelScrollListener>();
 
 	/**
 	 * Constructor
@@ -177,9 +187,72 @@ public class WheelView extends View {
 	 *            the label to set
 	 */
 	public void setLabel(String newLabel) {
-		label = newLabel;
-		labelLayout = null;
-		invalidate();
+		if (label == null || !label.equals(newLabel)) {
+			label = newLabel;
+			labelLayout = null;
+			invalidate();
+		}
+	}
+	
+	/**
+	 * Adds wheel changing listener
+	 * @param listener the listener 
+	 */
+	public void addChangingListener(OnWheelChangedListener listener) {
+		changingListeners.add(listener);
+	}
+
+	/**
+	 * Removes wheel changing listener
+	 * @param listener the listener
+	 */
+	public void removeChangingListener(OnWheelChangedListener listener) {
+		changingListeners.remove(listener);
+	}
+	
+	/**
+	 * Notifies changing listeners
+	 * @param oldValue the old wheel value
+	 * @param newValue the new wheel value
+	 */
+	protected void notifyChangingListeners(int oldValue, int newValue) {
+		for (OnWheelChangedListener listener : changingListeners) {
+			listener.onChanged(this, oldValue, newValue);
+		}
+	}
+
+	/**
+	 * Adds wheel scrolling listener
+	 * @param listener the listener 
+	 */
+	public void addScrollingListener(OnWheelScrollListener listener) {
+		scrollingListeners.add(listener);
+	}
+
+	/**
+	 * Removes wheel scrolling listener
+	 * @param listener the listener
+	 */
+	public void removeScrollingListener(OnWheelScrollListener listener) {
+		scrollingListeners.remove(listener);
+	}
+	
+	/**
+	 * Notifies listeners about starting scrolling
+	 */
+	protected void notifyScrollingListenersAboutStart() {
+		for (OnWheelScrollListener listener : scrollingListeners) {
+			listener.onScrollStarts(this);
+		}
+	}
+
+	/**
+	 * Notifies listeners about ending scrolling
+	 */
+	protected void notifyScrollingListenersAboutEnd() {
+		for (OnWheelScrollListener listener : scrollingListeners) {
+			listener.onScrollEnds(this);
+		}
 	}
 
 	/**
@@ -200,7 +273,12 @@ public class WheelView extends View {
 		if (index != currentItem) {
 			itemsLayout = null;
 			valueLayout = null;
+			
+			int old = currentItem;
 			currentItem = index;
+			
+			notifyChangingListeners(old, currentItem);
+
 			invalidate();
 		}
 	}
@@ -548,6 +626,10 @@ public class WheelView extends View {
 			break;
 
 		case MotionEvent.ACTION_MOVE:
+			if (!isScrollingPerformed) {
+				isScrollingPerformed = true;
+				notifyScrollingListenersAboutStart();
+			}
 			float delta = event.getY() - lastYTouch;
 			int count = (int) (visibleItems * delta / getHeight());
 			int pos = currentItem - count;
@@ -558,7 +640,12 @@ public class WheelView extends View {
 				setCurrentItem(pos);
 			}
 			break;
+			
 		case MotionEvent.ACTION_UP:
+			if (isScrollingPerformed) {
+				notifyScrollingListenersAboutEnd();
+				isScrollingPerformed = false;
+			}
 			break;
 		}
 		return true;

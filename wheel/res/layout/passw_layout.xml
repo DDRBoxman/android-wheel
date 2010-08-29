@@ -12,7 +12,8 @@
 		android:layout_marginTop="24dp"
 		android:layout_gravity="center_horizontal"
 		android:textSize="20sp"
-		android:text="Please enter password"/>
+		android:textStyle="bold"
+		android:text="Please enter PIN"/>
 		
 	<LinearLayout
 		android:layout_marginTop="24dp"
@@ -33,6 +34,15 @@
 			android:layout_height="wrap_content"
 			android:layout_width="wrap_content"/>
 	</LinearLayout>
+	
+   <TextView android:id="@+id/pwd_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:layout_gravity="center_horizontal"
+        android:textSize="18sp"
+        android:textColor="#FFF"
+        android:text="Wrong PIN"/>
 	
 	<!-- Button
 		android:layout_width="wrap_content"
