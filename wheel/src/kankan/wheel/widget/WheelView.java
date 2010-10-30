@@ -106,6 +106,8 @@ public class WheelView extends View {
 	// Last touch Y position
 	private float lastYTouch;
 	
+	private float scrollingOffset;
+	
 	// scrolling
 	private boolean isScrollingPerformed; 
 	
@@ -242,7 +244,7 @@ public class WheelView extends View {
 	 */
 	protected void notifyScrollingListenersAboutStart() {
 		for (OnWheelScrollListener listener : scrollingListeners) {
-			listener.onScrollStarts(this);
+			listener.onScrollingStarted(this);
 		}
 	}
 
@@ -251,7 +253,7 @@ public class WheelView extends View {
 	 */
 	protected void notifyScrollingListenersAboutEnd() {
 		for (OnWheelScrollListener listener : scrollingListeners) {
-			listener.onScrollEnds(this);
+			listener.onScrollingFinished(this);
 		}
 	}
 
@@ -270,17 +272,25 @@ public class WheelView extends View {
 	 * @param index the item index
 	 */
 	public void setCurrentItem(int index) {
-		if (index != currentItem) {
-			itemsLayout = null;
-			valueLayout = null;
+		if (index != currentItem) {			
+			invalidateLayouts();
 			
 			int old = currentItem;
 			currentItem = index;
 			
 			notifyChangingListeners(old, currentItem);
-
+			
 			invalidate();
 		}
+	}
+	
+	/**
+	 * Invalidates layouts
+	 */
+	private void invalidateLayouts() {
+		itemsLayout = null;
+		valueLayout = null;
+		scrollingOffset = 0;
 	}
 
 	/**
@@ -330,7 +340,7 @@ public class WheelView extends View {
 		}
 
 		int linecount = layout.getLineCount();
-		int desired = layout.getLineTop(linecount) - ITEM_OFFSET * 2
+		int desired = layout.getLineTop(linecount - 2) - ITEM_OFFSET * 2
 				- ADDITIONAL_ITEM_HEIGHT;
 
 		// Check against our minimum height
@@ -342,12 +352,14 @@ public class WheelView extends View {
 	/**
 	 * Builds text depending on current value
 	 * 
+	 * @param useCurrentValue
 	 * @return the text
 	 */
-	private String buildText() {
+	private String buildText(boolean useCurrentValue) {
 		WheelAdapter adapter = getAdapter();
 		StringBuilder itemsText = new StringBuilder();
-		int addItems = visibleItems / 2;
+		int addItems = visibleItems / 2 + 1;
+
 		for (int i = currentItem - addItems; i < currentItem; i++) {
 			if (i >= 0 && adapter != null) {
 				String text = adapter.getItem(i);
@@ -358,7 +370,12 @@ public class WheelView extends View {
 			itemsText.append("\n");
 		}
 		
-		itemsText.append("\n"); // here will be current value
+		String currentValue = null;
+		if (useCurrentValue && adapter != null) {
+			currentValue = adapter.getItem(currentItem);
+		}
+		
+		itemsText.append(currentValue != null ? currentValue + "\n" : "\n"); // here will be current value
 		
 		for (int i = currentItem + 1; i <= currentItem + addItems; i++) {
 			if (adapter != null && i < adapter.getItemsCount()) {
@@ -476,19 +493,21 @@ public class WheelView extends View {
 	 */
 	private void createLayouts(int widthItems, int widthLabel) {
 		if (itemsLayout == null || itemsLayout.getWidth() > widthItems) {
-			itemsLayout = new StaticLayout(buildText(), itemsPaint, widthItems,
+			itemsLayout = new StaticLayout(buildText(isScrollingPerformed), itemsPaint, widthItems,
 					widthLabel > 0 ? Layout.Alignment.ALIGN_OPPOSITE : Layout.Alignment.ALIGN_CENTER,
 					1, ADDITIONAL_ITEM_HEIGHT, false);
 		} else {
 			itemsLayout.increaseWidthTo(widthItems);
 		}
 
-		if (valueLayout == null || valueLayout.getWidth() > widthItems) {
+		if (!isScrollingPerformed && (valueLayout == null || valueLayout.getWidth() > widthItems)) {
 			String text = getAdapter() != null ? getAdapter().getItem(currentItem) : null;
 			valueLayout = new StaticLayout(text != null ? text : "",
 					valuePaint, widthItems, widthLabel > 0 ?
 							Layout.Alignment.ALIGN_OPPOSITE : Layout.Alignment.ALIGN_CENTER,
 							1, ADDITIONAL_ITEM_HEIGHT, false);
+		} else if (isScrollingPerformed) {
+			valueLayout = null;
 		} else {
 			valueLayout.increaseWidthTo(widthItems);
 		}
@@ -530,7 +549,7 @@ public class WheelView extends View {
 	@Override
 	protected void onDraw(Canvas canvas) {
 		super.onDraw(canvas);
-
+		
 		if (itemsLayout == null) {
 			if (itemsWidth == 0) {
 				calculateLayoutWidth(getWidth(), MeasureSpec.EXACTLY);
@@ -586,10 +605,12 @@ public class WheelView extends View {
 		}
 
 		// draw current value
-		canvas.save();
-		canvas.translate(0, bounds.top);
-		valueLayout.draw(canvas);
-		canvas.restore();
+		if (valueLayout != null) {
+			canvas.save();
+			canvas.translate(0, bounds.top + scrollingOffset);
+			valueLayout.draw(canvas);
+			canvas.restore();
+		}
 	}
 
 	/**
@@ -597,9 +618,15 @@ public class WheelView extends View {
 	 * @param canvas the canvas for drawing
 	 */
 	private void drawItems(Canvas canvas) {
+		canvas.save();
+		float itemHeight = getHeight() / visibleItems;
+		canvas.translate(0, - itemHeight + scrollingOffset);
+		
 		itemsPaint.setColor(ITEMS_TEXT_COLOR);
 		itemsPaint.drawableState = getDrawableState();
 		itemsLayout.draw(canvas);
+		
+		canvas.restore();
 	}
 
 	/**
@@ -629,25 +656,61 @@ public class WheelView extends View {
 			if (!isScrollingPerformed) {
 				isScrollingPerformed = true;
 				notifyScrollingListenersAboutStart();
+				invalidateLayouts();
 			}
-			float delta = event.getY() - lastYTouch;
-			int count = (int) (visibleItems * delta / getHeight());
+			doScroll(event.getY() - lastYTouch);
+			lastYTouch = event.getY();
+/*			float delta = event.getY() - lastYTouch;
+			float fCount = visibleItems * delta / getHeight();
+			int count = (int) fCount;
 			int pos = currentItem - count;
 			pos = Math.max(pos, 0);
 			pos = Math.min(pos, adapter.getItemsCount() - 1);
 			if (pos != currentItem) {
 				lastYTouch = event.getY();
 				setCurrentItem(pos);
+
+			} else {
+				invalidate();
 			}
+			scrollingOffset = (fCount - count) * getHeight() / visibleItems; */
 			break;
 			
 		case MotionEvent.ACTION_UP:
 			if (isScrollingPerformed) {
 				notifyScrollingListenersAboutEnd();
 				isScrollingPerformed = false;
+				
+				float itemHeight = getHeight() / visibleItems;
+				if (Math.abs(scrollingOffset) > itemHeight / 2) {
+					doScroll(scrollingOffset > 0 ? itemHeight / 2 : - itemHeight / 2);
+				}
+				
+				invalidateLayouts();
+				invalidate();
 			}
 			break;
 		}
 		return true;
+	}
+	
+	/**
+	 * Scrolls the wheel
+	 * @param delta the scrolling value
+	 */
+	private void doScroll(float delta) {
+		delta += scrollingOffset;
+		
+		float fCount = visibleItems * delta / getHeight();
+		int count = (int) fCount;
+		int pos = currentItem - count;
+		pos = Math.max(pos, 0);
+		pos = Math.min(pos, adapter.getItemsCount() - 1);
+		if (pos != currentItem) {
+			setCurrentItem(pos);
+		} else {
+			invalidate();
+		}
+		scrollingOffset = (fCount - count) * getHeight() / visibleItems;
 	}
 }

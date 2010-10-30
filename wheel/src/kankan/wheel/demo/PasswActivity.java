@@ -28,10 +28,10 @@ public class PasswActivity extends Activity {
     
     // Wheel scrolled listener
     OnWheelScrollListener scrolledListener = new OnWheelScrollListener() {
-		public void onScrollStarts(WheelView wheel) {
+		public void onScrollingStarted(WheelView wheel) {
 			wheelScrolled = true;
 		}
-		public void onScrollEnds(WheelView wheel) {
+		public void onScrollingFinished(WheelView wheel) {
 			wheelScrolled = false;
 			updateStatus();
 		}
