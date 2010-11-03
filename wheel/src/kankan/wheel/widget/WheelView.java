@@ -150,6 +150,7 @@ public class WheelView extends View {
 	 */
 	public void setAdapter(WheelAdapter adapter) {
 		this.adapter = adapter;
+		invalidateLayouts();
 		invalidate();
 	}
 	
@@ -620,7 +621,7 @@ public class WheelView extends View {
 	private void drawItems(Canvas canvas) {
 		canvas.save();
 		float itemHeight = getHeight() / visibleItems;
-		canvas.translate(0, - itemHeight + scrollingOffset);
+		canvas.translate(0, - itemHeight * 1.1f + scrollingOffset);
 		
 		itemsPaint.setColor(ITEMS_TEXT_COLOR);
 		itemsPaint.drawableState = getDrawableState();

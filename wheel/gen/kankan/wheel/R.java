@@ -17,16 +17,17 @@ public final class R {
         public static final int wheel_val=0x7f020003;
     }
     public static final class id {
-        public static final int city=0x7f040000;
-        public static final int empty=0x7f040001;
-        public static final int hour=0x7f040007;
-        public static final int mins=0x7f040008;
-        public static final int passw_1=0x7f040002;
-        public static final int passw_2=0x7f040003;
-        public static final int passw_3=0x7f040004;
-        public static final int passw_4=0x7f040005;
-        public static final int pwd_status=0x7f040006;
-        public static final int time=0x7f040009;
+        public static final int city=0x7f040001;
+        public static final int country=0x7f040000;
+        public static final int empty=0x7f040002;
+        public static final int hour=0x7f040008;
+        public static final int mins=0x7f040009;
+        public static final int passw_1=0x7f040003;
+        public static final int passw_2=0x7f040004;
+        public static final int passw_3=0x7f040005;
+        public static final int passw_4=0x7f040006;
+        public static final int pwd_status=0x7f040007;
+        public static final int time=0x7f04000a;
     }
     public static final class layout {
         public static final int cities_layout=0x7f030000;
