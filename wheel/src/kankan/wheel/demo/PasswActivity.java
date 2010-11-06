@@ -69,6 +69,7 @@ public class PasswActivity extends Activity {
         
         wheel.addChangingListener(changedListener);
         wheel.addScrollingListener(scrolledListener);
+        wheel.setCyclic(true);
     }
     
     /**

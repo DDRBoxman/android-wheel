@@ -28,6 +28,7 @@ public class TimeActivity extends Activity {
         final WheelView mins = (WheelView) findViewById(R.id.mins);
         mins.setAdapter(new NumericWheelAdapter(0, 59));
         mins.setLabel("mins");
+        mins.setCyclic(true);
         
         final TimePicker picker = (TimePicker) findViewById(R.id.time);
         picker.setIs24HourView(true);

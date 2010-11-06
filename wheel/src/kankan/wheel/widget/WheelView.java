@@ -45,7 +45,7 @@ import android.view.View;
  */
 public class WheelView extends View {
 	/** Current value & label text color */
-	private static final int VALUE_TEXT_COLOR = 0xE0000000;
+	private static final int VALUE_TEXT_COLOR = 0xF0000000;
 
 	/** Items text color */
 	private static final int ITEMS_TEXT_COLOR = 0xFF000000;
@@ -105,11 +105,13 @@ public class WheelView extends View {
 
 	// Last touch Y position
 	private float lastYTouch;
-	
-	private float scrollingOffset;
-	
+		
 	// scrolling
 	private boolean isScrollingPerformed; 
+	private float scrollingOffset;
+
+	// Cyclic
+	boolean isCyclic = false;
 	
 	// listeners
 	private List<OnWheelChangedListener> changingListeners = new LinkedList<OnWheelChangedListener>();
@@ -285,6 +287,26 @@ public class WheelView extends View {
 		}
 	}
 	
+	
+	/**
+	 * Tests if wheel is cyclic. That means before the 1st item there is shown the last one
+	 * @return true if wheel is cyclic
+	 */
+	public boolean isCyclic() {
+		return isCyclic;
+	}
+
+	/**
+	 * Set wheel cyclic flag
+	 * @param isCyclic the flag to set
+	 */
+	public void setCyclic(boolean isCyclic) {
+		this.isCyclic = isCyclic;
+		
+		invalidate();
+		invalidateLayouts();
+	}
+
 	/**
 	 * Invalidates layouts
 	 */
@@ -310,7 +332,7 @@ public class WheelView extends View {
 					| Paint.FAKE_BOLD_TEXT_FLAG | Paint.DITHER_FLAG);
 			//valuePaint.density = getResources().getDisplayMetrics().density;
 			valuePaint.setTextSize(TEXT_SIZE);
-			valuePaint.setShadowLayer(0.5f, 0, 0.5f, 0xFFFFFFFF);
+			valuePaint.setShadowLayer(0.1f, 0, 0.1f, 0xFFC0C0C0);
 		}
 
 		if (centerDrawable == null) {
@@ -350,6 +372,23 @@ public class WheelView extends View {
 		return desired;
 	}
 
+	private String getTextItem(int index) {
+		if (adapter == null || adapter.getItemsCount() == 0) {
+			return null;
+		}
+		int count = adapter.getItemsCount();
+		if ((index < 0 || index >= count) && !isCyclic) {
+			return null;
+		} else {
+			while (index < 0) {
+				index = count + index;
+			}
+		}
+		
+		index %= count;
+		return adapter.getItem(index);
+	}
+	
 	/**
 	 * Builds text depending on current value
 	 * 
@@ -357,30 +396,12 @@ public class WheelView extends View {
 	 * @return the text
 	 */
 	private String buildText(boolean useCurrentValue) {
-		WheelAdapter adapter = getAdapter();
 		StringBuilder itemsText = new StringBuilder();
 		int addItems = visibleItems / 2 + 1;
 
-		for (int i = currentItem - addItems; i < currentItem; i++) {
-			if (i >= 0 && adapter != null) {
-				String text = adapter.getItem(i);
-				if (text != null) {
-					itemsText.append(text);
-				}
-			}
-			itemsText.append("\n");
-		}
-		
-		String currentValue = null;
-		if (useCurrentValue && adapter != null) {
-			currentValue = adapter.getItem(currentItem);
-		}
-		
-		itemsText.append(currentValue != null ? currentValue + "\n" : "\n"); // here will be current value
-		
-		for (int i = currentItem + 1; i <= currentItem + addItems; i++) {
-			if (adapter != null && i < adapter.getItemsCount()) {
-				String text = adapter.getItem(i);
+		for (int i = currentItem - addItems; i <= currentItem + addItems; i++) {
+			if (useCurrentValue || i != currentItem) {
+				String text = getTextItem(i);
 				if (text != null) {
 					itemsText.append(text);
 				}
@@ -389,6 +410,7 @@ public class WheelView extends View {
 				itemsText.append("\n");
 			}
 		}
+		
 		return itemsText.toString();
 	}
 
@@ -559,8 +581,6 @@ public class WheelView extends View {
 			}
 		}
 
-		drawCenterRect(canvas);
-		
 		if (itemsWidth > 0) {
 			canvas.save();
 			// Skip padding space and hide a part of top and bottom items
@@ -570,6 +590,7 @@ public class WheelView extends View {
 			canvas.restore();
 		}
 
+		drawCenterRect(canvas);
 		drawShadows(canvas);
 	}
 
@@ -620,8 +641,11 @@ public class WheelView extends View {
 	 */
 	private void drawItems(Canvas canvas) {
 		canvas.save();
-		float itemHeight = getHeight() / visibleItems;
-		canvas.translate(0, - itemHeight * 1.1f + scrollingOffset);
+		
+		Rect bounds = new Rect();
+		itemsLayout.getLineBounds(1, bounds);
+
+		canvas.translate(0, - bounds.top + scrollingOffset);
 		
 		itemsPaint.setColor(ITEMS_TEXT_COLOR);
 		itemsPaint.drawableState = getDrawableState();
@@ -661,20 +685,6 @@ public class WheelView extends View {
 			}
 			doScroll(event.getY() - lastYTouch);
 			lastYTouch = event.getY();
-/*			float delta = event.getY() - lastYTouch;
-			float fCount = visibleItems * delta / getHeight();
-			int count = (int) fCount;
-			int pos = currentItem - count;
-			pos = Math.max(pos, 0);
-			pos = Math.min(pos, adapter.getItemsCount() - 1);
-			if (pos != currentItem) {
-				lastYTouch = event.getY();
-				setCurrentItem(pos);
-
-			} else {
-				invalidate();
-			}
-			scrollingOffset = (fCount - count) * getHeight() / visibleItems; */
 			break;
 			
 		case MotionEvent.ACTION_UP:
@@ -705,8 +715,13 @@ public class WheelView extends View {
 		float fCount = visibleItems * delta / getHeight();
 		int count = (int) fCount;
 		int pos = currentItem - count;
-		pos = Math.max(pos, 0);
-		pos = Math.min(pos, adapter.getItemsCount() - 1);
+		if (isCyclic && adapter.getItemsCount() > 0) {
+			pos += adapter.getItemsCount();
+			pos %= adapter.getItemsCount();
+		} else {
+			pos = Math.max(pos, 0);
+			pos = Math.min(pos, adapter.getItemsCount() - 1);
+		}
 		if (pos != currentItem) {
 			setCurrentItem(pos);
 		} else {
