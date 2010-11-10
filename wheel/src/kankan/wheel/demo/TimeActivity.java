@@ -26,7 +26,7 @@ public class TimeActivity extends Activity {
         hours.setLabel("hours");
         
         final WheelView mins = (WheelView) findViewById(R.id.mins);
-        mins.setAdapter(new NumericWheelAdapter(0, 59));
+        mins.setAdapter(new NumericWheelAdapter(0, 59, "%02d"));
         mins.setLabel("mins");
         mins.setCyclic(true);
         

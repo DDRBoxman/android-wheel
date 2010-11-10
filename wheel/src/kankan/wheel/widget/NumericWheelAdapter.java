@@ -32,6 +32,9 @@ public class NumericWheelAdapter implements WheelAdapter {
 	private int minValue;
 	private int maxValue;
 	
+	// format
+	private String format;
+	
 	/**
 	 * Default constructor
 	 */
@@ -42,18 +45,29 @@ public class NumericWheelAdapter implements WheelAdapter {
 	/**
 	 * Constructor
 	 * @param minValue the wheel min value
-	 * @param maxValue the wheel maz value
+	 * @param maxValue the wheel max value
 	 */
 	public NumericWheelAdapter(int minValue, int maxValue) {
-		this.minValue = minValue;
-		this.maxValue = maxValue;
+		this(minValue, maxValue, null);
 	}
 
+	/**
+	 * Constructor
+	 * @param minValue the wheel min value
+	 * @param maxValue the wheel max value
+	 * @param format the format string
+	 */
+	public NumericWheelAdapter(int minValue, int maxValue, String format) {
+		this.minValue = minValue;
+		this.maxValue = maxValue;
+		this.format = format;
+	}
 
 	@Override
 	public String getItem(int index) {
 		if (index >= 0 && index < getItemsCount()) {
-			return Integer.toString(minValue + index);
+			int value = minValue + index;
+			return format != null ? String.format(format, value) : Integer.toString(value);
 		}
 		return null;
 	}
