@@ -30,13 +30,19 @@ import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.GradientDrawable.Orientation;
+import android.os.Handler;
+import android.os.Message;
 import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.util.AttributeSet;
 import android.util.FloatMath;
+import android.view.GestureDetector;
+import android.view.GestureDetector.SimpleOnGestureListener;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.animation.Interpolator;
+import android.widget.Scroller;
 
 /**
  * Numeric wheel view.
@@ -44,6 +50,12 @@ import android.view.View;
  * @author Yuri Kanivets
  */
 public class WheelView extends View {
+	/** Scrolling duration */
+	private static final int SCROLLING_DURATION = 400;
+
+	/** Minimum delta for scrolling */
+	private static final int MIN_DELTA_FOR_SCROLLING = 1;
+
 	/** Current value & label text color */
 	private static final int VALUE_TEXT_COLOR = 0xF0000000;
 
@@ -85,6 +97,9 @@ public class WheelView extends View {
 
 	// Count of visible items
 	private int visibleItems = DEF_VISIBLE_ITEMS;
+	
+	// Item height
+	private int itemHeight = 0;
 
 	// Text paints
 	private TextPaint itemsPaint;
@@ -103,17 +118,19 @@ public class WheelView extends View {
 	private GradientDrawable topShadow;
 	private GradientDrawable bottomShadow;
 
-	// Last touch Y position
-	private float lastYTouch;
-		
-	// scrolling
+	// Scrolling
 	private boolean isScrollingPerformed; 
-	private float scrollingOffset;
+	private int scrollingOffset;
+
+	// Scrolling animation
+	private GestureDetector gestureDetector;
+	private Scroller scroller;
+	private int lastScrollY;
 
 	// Cyclic
 	boolean isCyclic = false;
 	
-	// listeners
+	// Listeners
 	private List<OnWheelChangedListener> changingListeners = new LinkedList<OnWheelChangedListener>();
 	private List<OnWheelScrollListener> scrollingListeners = new LinkedList<OnWheelScrollListener>();
 
@@ -122,6 +139,7 @@ public class WheelView extends View {
 	 */
 	public WheelView(Context context, AttributeSet attrs, int defStyle) {
 		super(context, attrs, defStyle);
+		initData(context);
 	}
 
 	/**
@@ -129,6 +147,7 @@ public class WheelView extends View {
 	 */
 	public WheelView(Context context, AttributeSet attrs) {
 		super(context, attrs);
+		initData(context);
 	}
 
 	/**
@@ -136,8 +155,20 @@ public class WheelView extends View {
 	 */
 	public WheelView(Context context) {
 		super(context);
+		initData(context);
 	}
-
+	
+	/**
+	 * Initializes class data
+	 * @param context the context
+	 */
+	private void initData(Context context) {
+		gestureDetector = new GestureDetector(context, gestureListener);
+		gestureDetector.setIsLongpressEnabled(false);
+		
+		scroller = new Scroller(context);
+	}
+	
 	/**
 	 * Gets wheel adapter
 	 * @return the adapter
@@ -147,13 +178,22 @@ public class WheelView extends View {
 	}
 	
 	/**
-	 * Sets whell adapter
+	 * Sets wheel adapter
 	 * @param adapter the new wheel adapter
 	 */
 	public void setAdapter(WheelAdapter adapter) {
 		this.adapter = adapter;
 		invalidateLayouts();
 		invalidate();
+	}
+	
+	/**
+	 * Set the the specified scrolling interpolator
+	 * @param interpolator the interpolator
+	 */
+	public void setInterpolator(Interpolator interpolator) {
+		scroller.forceFinished(true);
+		scroller = new Scroller(getContext(), interpolator);
 	}
 	
 	/**
@@ -270,23 +310,49 @@ public class WheelView extends View {
 	}
 
 	/**
-	 * Sets the current item
+	 * Sets the current item. Does nothing when index is wrong.
+	 * 
+	 * @param index the item index
+	 * @param animated the animation flag
+	 */
+	public void setCurrentItem(int index, boolean animated) {
+		if (adapter == null || adapter.getItemsCount() == 0) {
+			return; // throw?
+		}
+		if (index < 0 || index >= adapter.getItemsCount()) {
+			if (isCyclic) {
+				while (index < 0) {
+					index += adapter.getItemsCount();
+				}
+				index %= adapter.getItemsCount();
+			} else{
+				return; // throw?
+			}
+		}
+		if (index != currentItem) {
+			if (animated) {
+				scroll(index - currentItem, SCROLLING_DURATION);
+			} else {
+				invalidateLayouts();
+			
+				int old = currentItem;
+				currentItem = index;
+			
+				notifyChangingListeners(old, currentItem);
+			
+				invalidate();
+			}
+		}
+	}
+
+	/**
+	 * Sets the current item w/o animation. Does nothing when index is wrong.
 	 * 
 	 * @param index the item index
 	 */
 	public void setCurrentItem(int index) {
-		if (index != currentItem) {			
-			invalidateLayouts();
-			
-			int old = currentItem;
-			currentItem = index;
-			
-			notifyChangingListeners(old, currentItem);
-			
-			invalidate();
-		}
-	}
-	
+		setCurrentItem(index, false);
+	}	
 	
 	/**
 	 * Tests if wheel is cyclic. That means before the 1st item there is shown the last one
@@ -362,8 +428,7 @@ public class WheelView extends View {
 			return 0;
 		}
 
-		int linecount = layout.getLineCount();
-		int desired = layout.getLineTop(linecount - 2) - ITEM_OFFSET * 2
+		int desired = getItemHeight() * visibleItems - ITEM_OFFSET * 2
 				- ADDITIONAL_ITEM_HEIGHT;
 
 		// Check against our minimum height
@@ -372,6 +437,11 @@ public class WheelView extends View {
 		return desired;
 	}
 
+	/**
+	 * Returns text item by index
+	 * @param index the item index
+	 * @return the item or null
+	 */
 	private String getTextItem(int index) {
 		if (adapter == null || adapter.getItemsCount() == 0) {
 			return null;
@@ -440,6 +510,21 @@ public class WheelView extends View {
 		}
 
 		return maxText != null ? maxText.length() : 0;
+	}
+
+	/**
+	 * Returns height of wheel item
+	 * @return the item height
+	 */
+	private int getItemHeight() {
+		if (itemHeight != 0) {
+			return itemHeight;
+		} else if (itemsLayout != null && itemsLayout.getLineCount() > 2) {
+			itemHeight = itemsLayout.getLineTop(2) - itemsLayout.getLineTop(1);
+			return itemHeight;
+		}
+		
+		return getHeight() / visibleItems;
 	}
 
 	/**
@@ -642,10 +727,8 @@ public class WheelView extends View {
 	private void drawItems(Canvas canvas) {
 		canvas.save();
 		
-		Rect bounds = new Rect();
-		itemsLayout.getLineBounds(1, bounds);
-
-		canvas.translate(0, - bounds.top + scrollingOffset);
+		int top = itemsLayout.getLineTop(1);
+		canvas.translate(0, - top + scrollingOffset);
 		
 		itemsPaint.setColor(ITEMS_TEXT_COLOR);
 		itemsPaint.drawableState = getDrawableState();
@@ -660,7 +743,7 @@ public class WheelView extends View {
 	 */
 	private void drawCenterRect(Canvas canvas) {
 		int center = getHeight() / 2;
-		int offset = getHeight() / visibleItems / 2;
+		int offset = getItemHeight() / 2;
 		centerDrawable.setBounds(0, center - offset, getWidth(), center + offset);
 		centerDrawable.draw(canvas);
 	}
@@ -672,35 +755,8 @@ public class WheelView extends View {
 			return true;
 		}
 		
-		switch (event.getAction()) {
-		case MotionEvent.ACTION_DOWN:
-			lastYTouch = event.getY();
-			break;
-
-		case MotionEvent.ACTION_MOVE:
-			if (!isScrollingPerformed) {
-				isScrollingPerformed = true;
-				notifyScrollingListenersAboutStart();
-				invalidateLayouts();
-			}
-			doScroll(event.getY() - lastYTouch);
-			lastYTouch = event.getY();
-			break;
-			
-		case MotionEvent.ACTION_UP:
-			if (isScrollingPerformed) {
-				notifyScrollingListenersAboutEnd();
-				isScrollingPerformed = false;
-				
-				float itemHeight = getHeight() / visibleItems;
-				if (Math.abs(scrollingOffset) > itemHeight / 2) {
-					doScroll(scrollingOffset > 0 ? itemHeight / 2 : - itemHeight / 2);
-				}
-				
-				invalidateLayouts();
-				invalidate();
-			}
-			break;
+			if (!gestureDetector.onTouchEvent(event) && event.getAction() == MotionEvent.ACTION_UP) {
+			justify();
 		}
 		return true;
 	}
@@ -709,24 +765,186 @@ public class WheelView extends View {
 	 * Scrolls the wheel
 	 * @param delta the scrolling value
 	 */
-	private void doScroll(float delta) {
-		delta += scrollingOffset;
+	private void doScroll(int delta) {
+		scrollingOffset += delta;
 		
-		float fCount = visibleItems * delta / getHeight();
-		int count = (int) fCount;
+		int count = scrollingOffset / getItemHeight();
 		int pos = currentItem - count;
 		if (isCyclic && adapter.getItemsCount() > 0) {
-			pos += adapter.getItemsCount();
+			// fix position by rotating
+			while (pos < 0) {
+				pos += adapter.getItemsCount();
+			}
 			pos %= adapter.getItemsCount();
+		} else if (isScrollingPerformed) {
+			// 
+			if (pos < 0) {
+				count = currentItem;
+				pos = 0;
+			} else if (pos >= adapter.getItemsCount()) {
+				count = currentItem - adapter.getItemsCount() + 1;
+				pos = adapter.getItemsCount() - 1;
+			}
 		} else {
+			// fix position
 			pos = Math.max(pos, 0);
 			pos = Math.min(pos, adapter.getItemsCount() - 1);
 		}
+		
+		int offset = scrollingOffset;
 		if (pos != currentItem) {
-			setCurrentItem(pos);
+			setCurrentItem(pos, false);
 		} else {
 			invalidate();
 		}
-		scrollingOffset = (fCount - count) * getHeight() / visibleItems;
+		
+		// update offset
+		scrollingOffset = offset - count * getItemHeight();
+		if (scrollingOffset > getHeight()) {
+			scrollingOffset = scrollingOffset % getHeight() + getHeight();
+		}
 	}
+	
+	// gesture listener
+	private SimpleOnGestureListener gestureListener = new SimpleOnGestureListener() {
+		public boolean onDown(MotionEvent e) {
+			if (isScrollingPerformed) {
+				scroller.forceFinished(true);
+				clearMessages();
+				return true;
+			}
+			return false;
+		}
+		
+		public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
+			startScrolling();
+			doScroll((int)-distanceY);
+			return true;
+		}
+		
+		public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+			lastScrollY = currentItem * getItemHeight() + scrollingOffset;
+			int maxY = isCyclic ? 0x7FFFFFFF : adapter.getItemsCount() * getItemHeight();
+			int minY = isCyclic ? -maxY : 0;
+			scroller.fling(0, lastScrollY, 0, (int) -velocityY / 2, 0, 0, minY, maxY);
+			setNextMessage(MESSAGE_SCROLL);
+			return true;
+		}
+	};
+
+	// Messages
+	private final int MESSAGE_SCROLL = 0;
+	private final int MESSAGE_JUSTIFY = 1;
+	
+	/**
+	 * Set next message to queue. Clears queue before.
+	 * 
+	 * @param message the message to set
+	 */
+	private void setNextMessage(int message) {
+		clearMessages();
+		animationHandler.sendEmptyMessage(message);
+	}
+
+	/**
+	 * Clears messages from queue
+	 */
+	private void clearMessages() {
+		animationHandler.removeMessages(MESSAGE_SCROLL);
+		animationHandler.removeMessages(MESSAGE_JUSTIFY);
+	}
+	
+	// animation handler
+	private Handler animationHandler = new Handler() {
+		public void handleMessage(Message msg) {
+			scroller.computeScrollOffset();
+			int currY = scroller.getCurrY();
+			int delta = lastScrollY - currY;
+			lastScrollY = currY;
+			if (delta != 0) {
+				doScroll(delta);
+			}
+			
+			// scrolling is not finished when it comes to final Y
+			// so, finish it manually 
+			if (Math.abs(currY - scroller.getFinalY()) < MIN_DELTA_FOR_SCROLLING) {
+				currY = scroller.getFinalY();
+				scroller.forceFinished(true);
+			}
+			if (!scroller.isFinished()) {
+				animationHandler.sendEmptyMessage(msg.what);
+			} else if (msg.what == MESSAGE_SCROLL) {
+				justify();
+			} else {
+				finishScrolling();
+			}
+		}
+	};
+	
+	/**
+	 * Justifies wheel
+	 */
+	private void justify() {
+		if (adapter == null) {
+			return;
+		}
+		
+		lastScrollY = 0;
+		int offset = scrollingOffset;
+		int itemHeight = getItemHeight();
+		boolean needToIncrease = offset > 0 ? currentItem < adapter.getItemsCount() : currentItem > 0; 
+		if ((isCyclic || needToIncrease) && Math.abs((float) offset) > (float) itemHeight / 2) {
+			if (offset < 0)
+				offset += itemHeight + MIN_DELTA_FOR_SCROLLING;
+			else
+				offset -= itemHeight + MIN_DELTA_FOR_SCROLLING;
+		}
+		if (Math.abs(offset) > MIN_DELTA_FOR_SCROLLING) {
+			scroller.startScroll(0, 0, 0, offset, SCROLLING_DURATION);
+			setNextMessage(MESSAGE_JUSTIFY);
+		} else {
+			finishScrolling();
+		}
+	}
+	
+	/**
+	 * Starts scrolling
+	 */
+	private void startScrolling() {
+		if (!isScrollingPerformed) {
+			isScrollingPerformed = true;
+			notifyScrollingListenersAboutStart();
+		}
+	}
+
+	/**
+	 * Finishes scrolling
+	 */
+	void finishScrolling() {
+		if (isScrollingPerformed) {
+			notifyScrollingListenersAboutEnd();
+			isScrollingPerformed = false;
+		}
+		invalidateLayouts();
+		invalidate();
+	}
+	
+	
+	/**
+	 * Scroll the wheel
+	 * @param itemsToSkip items to scroll
+	 * @param time scrolling duration
+	 */
+	public void scroll(int itemsToScroll, int time) {
+		scroller.forceFinished(true);
+
+		lastScrollY = scrollingOffset;
+		int offset = itemsToScroll * getItemHeight();
+		
+		scroller.startScroll(0, lastScrollY, 0, offset - lastScrollY, time);
+		setNextMessage(MESSAGE_SCROLL);
+		
+		startScrolling();
+	}
+
 }

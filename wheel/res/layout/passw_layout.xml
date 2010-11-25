@@ -44,12 +44,12 @@
         android:textColor="#FFF"
         android:text="Wrong PIN"/>
 	
-	<!-- Button
+	<Button android:id="@+id/btn_mix"
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
 		android:layout_gravity="center_horizontal"
 		android:layout_marginTop="12dp"
 		android:textSize="18sp"
-		android:text="Check password"/-->
+		android:text="   Mix  "/>
 
 </LinearLayout>
