@@ -1,10 +1,10 @@
 package kankan.wheel.demo;
 
 import kankan.wheel.R;
-import kankan.wheel.widget.NumericWheelAdapter;
 import kankan.wheel.widget.OnWheelChangedListener;
 import kankan.wheel.widget.OnWheelScrollListener;
 import kankan.wheel.widget.WheelView;
+import kankan.wheel.widget.adapters.NumericWheelAdapter;
 import android.app.Activity;
 import android.os.Bundle;
 import android.view.View;
@@ -78,7 +78,7 @@ public class PasswActivity extends Activity {
      */
     private void initWheel(int id) {
         WheelView wheel = getWheel(id);
-        wheel.setAdapter(new NumericWheelAdapter(0, 9));
+        wheel.setViewAdapter(new NumericWheelAdapter(this, 0, 9));
         wheel.setCurrentItem((int)(Math.random() * 10));
         
         wheel.addChangingListener(changedListener);

@@ -5,7 +5,7 @@
       android:versionCode="1"
       android:versionName="1.0">
       
-    <application android:icon="@drawable/icon" android:label="WheelDemo">
+    <application android:icon="@drawable/wheel" android:label="WheelDemo">
 
 		<activity android:name="kankan.wheel.demo.WheelDemo">
 		    <intent-filter>
@@ -19,24 +19,42 @@
                 <category android:name="kankan.wheel.WHEEL_SAMPLE"/>
             </intent-filter>
 		</activity>
+        <activity android:name="kankan.wheel.demo.Time2Activity" android:label="Time 2">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="kankan.wheel.WHEEL_SAMPLE"/>
+            </intent-filter>
+        </activity>
+        <activity android:name="kankan.wheel.demo.DateActivity" android:label="Date">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="kankan.wheel.WHEEL_SAMPLE"/>
+            </intent-filter>
+        </activity>
 		<activity android:name="kankan.wheel.demo.PasswActivity" android:label="Password">
 		    <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="kankan.wheel.WHEEL_SAMPLE"/>
             </intent-filter>
 		</activity>
+        <activity android:name="kankan.wheel.demo.SlotMachineActivity" android:label="Slot Machine">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="kankan.wheel.WHEEL_SAMPLE"/>
+            </intent-filter>
+        </activity>
 		<activity android:name="kankan.wheel.demo.CitiesActivity" android:label="Cities">
 		    <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="kankan.wheel.WHEEL_SAMPLE"/>
             </intent-filter>
 		</activity>
-		<activity android:name="kankan.wheel.demo.EmptyActivity" android:label="Empty wheel">
-		    <intent-filter>
+        <activity android:name="kankan.wheel.demo.SpeedActivity" android:label="Speed">
+            <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="kankan.wheel.WHEEL_SAMPLE"/>
             </intent-filter>
-		</activity>
+        </activity>
 
     </application>
 

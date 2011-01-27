@@ -3,10 +3,10 @@ package kankan.wheel.demo;
 import java.util.Calendar;
 
 import kankan.wheel.R;
-import kankan.wheel.widget.NumericWheelAdapter;
 import kankan.wheel.widget.OnWheelChangedListener;
 import kankan.wheel.widget.OnWheelScrollListener;
 import kankan.wheel.widget.WheelView;
+import kankan.wheel.widget.adapters.NumericWheelAdapter;
 
 import android.app.Activity;
 import android.os.Bundle;
@@ -16,7 +16,7 @@ public class TimeActivity extends Activity {
 	// Time changed flag
 	private boolean timeChanged = false;
 	
-	//
+	// Time scrolled flag
 	private boolean timeScrolled = false;
 	
 	@Override
@@ -26,13 +26,15 @@ public class TimeActivity extends Activity {
 		setContentView(R.layout.time_layout);
 	
 		final WheelView hours = (WheelView) findViewById(R.id.hour);
-		hours.setAdapter(new NumericWheelAdapter(0, 23));
+		hours.setViewAdapter(new NumericWheelAdapter(this, 0, 23));
 		hours.setLabel("hours");
+		hours.setLabelWidth(72);
 	
 		final WheelView mins = (WheelView) findViewById(R.id.mins);
-		mins.setAdapter(new NumericWheelAdapter(0, 59, "%02d"));
+		mins.setViewAdapter(new NumericWheelAdapter(this, 0, 59, "%02d"));
 		mins.setLabel("mins");
 		mins.setCyclic(true);
+		mins.setLabelWidth(72);
 	
 		final TimePicker picker = (TimePicker) findViewById(R.id.time);
 		picker.setIs24HourView(true);
