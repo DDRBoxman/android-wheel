@@ -48,11 +48,6 @@ import android.widget.Scroller;
  * @author Yuri Kanivets
  */
 public class WheelView extends View {
-	/** Scrolling duration */
-	private static final int SCROLLING_DURATION = 400;
-
-	/** Minimum delta for scrolling */
-	private static final int MIN_DELTA_FOR_SCROLLING = 1;
 
 	/** Top and bottom shadows colors */
 	private static final int[] SHADOWS_COLORS = new int[] { 0xFF111111,
@@ -91,13 +86,9 @@ public class WheelView extends View {
 	private GradientDrawable bottomShadow;
 
 	// Scrolling
-	private boolean isScrollingPerformed; 
-	private int scrollingOffset;
-
-	// Scrolling animation
-	private GestureDetector gestureDetector;
-	private Scroller scroller;
-	private int lastScrollY;
+	private WheelScroller scroller;
+    private boolean isScrollingPerformed; 
+    private int scrollingOffset;
 
 	// Cyclic
 	boolean isCyclic = false;
@@ -121,7 +112,7 @@ public class WheelView extends View {
 	private WheelViewAdapter viewAdapter;
 	
 	// Caching
-	CachingStrategy cache = new CachingStrategy(this);
+	private CachingStrategy cache = new CachingStrategy(this);
 
 	// Listeners
 	private List<OnWheelChangedListener> changingListeners = new LinkedList<OnWheelChangedListener>();
@@ -156,11 +147,45 @@ public class WheelView extends View {
 	 * @param context the context
 	 */
 	private void initData(Context context) {
-		gestureDetector = new GestureDetector(context, gestureListener);
-		gestureDetector.setIsLongpressEnabled(false);
-		
-		scroller = new Scroller(context);
+	    scroller = new WheelScroller(getContext(), scrollingListener);
 	}
+	
+	// Scrolling listener
+	WheelScroller.ScrollingListener scrollingListener = new WheelScroller.ScrollingListener() {
+        public void onStarted() {
+            isScrollingPerformed = true;
+            notifyScrollingListenersAboutStart();
+        }
+        
+        public void onScroll(int distance) {
+            doScroll(distance);
+            
+            int height = getHeight();
+            if (scrollingOffset > height) {
+                scrollingOffset = height;
+                scroller.stopScrolling();
+            } else if (scrollingOffset < -height) {
+                scrollingOffset = -height;
+                scroller.stopScrolling();
+            }
+        }
+        
+        public void onFinished() {
+            if (isScrollingPerformed) {
+                notifyScrollingListenersAboutEnd();
+                isScrollingPerformed = false;
+            }
+            
+            scrollingOffset = 0;
+            invalidate();
+        }
+
+        public void onJustify() {
+            if (Math.abs(scrollingOffset) > WheelScroller.MIN_DELTA_FOR_SCROLLING) {
+                scroller.scroll(scrollingOffset, 0);
+            }
+        }
+    };
 	
     /**
      * Gets wheel adapter
@@ -189,8 +214,7 @@ public class WheelView extends View {
 	 * @param interpolator the interpolator
 	 */
 	public void setInterpolator(Interpolator interpolator) {
-		scroller.forceFinished(true);
-		scroller = new Scroller(getContext(), interpolator);
+		scroller.setInterpolator(interpolator);
 	}
 	
 	/**
@@ -361,19 +385,28 @@ public class WheelView extends View {
 		if (viewAdapter == null || viewAdapter.getItemsCount() == 0) {
 			return; // throw?
 		}
-		if (index < 0 || index >= viewAdapter.getItemsCount()) {
+		
+		int itemCount = viewAdapter.getItemsCount();
+		if (index < 0 || index >= itemCount) {
 			if (isCyclic) {
 				while (index < 0) {
-					index += viewAdapter.getItemsCount();
+					index += itemCount;
 				}
-				index %= viewAdapter.getItemsCount();
+				index %= itemCount;
 			} else{
 				return; // throw?
 			}
 		}
 		if (index != currentItem) {
 			if (animated) {
-				scroll(index - currentItem, SCROLLING_DURATION);
+			    int itemsToScroll = index - currentItem;
+			    if (isCyclic) {
+			        int scroll = itemCount + Math.min(index, currentItem) - Math.max(index, currentItem);
+			        if (scroll < Math.abs(itemsToScroll)) {
+			            itemsToScroll = itemsToScroll < 0 ? scroll : -scroll;
+			        }
+			    }
+				scroll(itemsToScroll, 0);
 			} else {
 				scrollingOffset = 0;
 			
@@ -731,17 +764,13 @@ public class WheelView extends View {
 		            }
 		            int items = distance / getItemHeight();
 		            if (items != 0 && isValidItemIndex(currentItem + items)) {
-                        scroll(items, SCROLLING_DURATION);
+                        scroll(items, 0);
 		            }
 		        }
 		        break;
 		}
-		
-		if (!gestureDetector.onTouchEvent(event) && event.getAction() == MotionEvent.ACTION_UP) {
-			justify();
-		}
 
-		return true;
+		return scroller.onTouchEvent(event);
 	}
 	
 	/**
@@ -751,16 +780,30 @@ public class WheelView extends View {
 	private void doScroll(int delta) {
 		scrollingOffset += delta;
 		
-		int count = scrollingOffset / getItemHeight();
+		int itemHeight = getItemHeight();
+		int count = scrollingOffset / itemHeight;
+
 		int pos = currentItem - count;
 		int itemCount = viewAdapter.getItemsCount();
+		
+	    int fixPos = scrollingOffset % itemHeight;
+	    if (Math.abs(fixPos) <= itemHeight / 2) {
+	        fixPos = 0;
+	    }
 		if (isCyclic && itemCount > 0) {
+		    if (fixPos > 0) {
+		        pos--;
+                count++;
+		    } else if (fixPos < 0) {
+		        pos++;
+		        count--;
+		    }
 			// fix position by rotating
 			while (pos < 0) {
 				pos += itemCount;
 			}
 			pos %= itemCount;
-		} else if (isScrollingPerformed) {
+		} else {
 			// 
 			if (pos < 0) {
 				count = currentItem;
@@ -768,11 +811,13 @@ public class WheelView extends View {
 			} else if (pos >= itemCount) {
 				count = currentItem - itemCount + 1;
 				pos = itemCount - 1;
-			}
-		} else {
-			// fix position
-			pos = Math.max(pos, 0);
-			pos = Math.min(pos, itemCount - 1);
+			} else if (pos > 0 && fixPos > 0) {
+                pos--;
+                count++;
+            } else if (pos < itemCount - 1 && fixPos < 0) {
+                pos++;
+                count--;
+            }
 		}
 		
 		int offset = scrollingOffset;
@@ -783,153 +828,20 @@ public class WheelView extends View {
 		}
 		
 		// update offset
-		scrollingOffset = offset - count * getItemHeight();
+		scrollingOffset = offset - count * itemHeight;
 		if (scrollingOffset > getHeight()) {
 			scrollingOffset = scrollingOffset % getHeight() + getHeight();
 		}
 	}
-	
-	// gesture listener
-	private SimpleOnGestureListener gestureListener = new SimpleOnGestureListener() {
-		public boolean onDown(MotionEvent e) {
-			if (isScrollingPerformed) {
-				scroller.forceFinished(true);
-				clearMessages();
-				return true;
-			}
-			return false;
-		}
 		
-		public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
-			startScrolling();
-			doScroll((int)-distanceY);
-			return true;
-		}
-		
-		public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
-			lastScrollY = currentItem * getItemHeight() + scrollingOffset;
-			int maxY = isCyclic ? 0x7FFFFFFF : viewAdapter.getItemsCount() * getItemHeight();
-			int minY = isCyclic ? -maxY : 0;
-			scroller.fling(0, lastScrollY, 0, (int) -velocityY / 2, 0, 0, minY, maxY);
-			setNextMessage(MESSAGE_SCROLL);
-			return true;
-		}
-	};
-
-	// Messages
-	private final int MESSAGE_SCROLL = 0;
-	private final int MESSAGE_JUSTIFY = 1;
-	
-	/**
-	 * Set next message to queue. Clears queue before.
-	 * 
-	 * @param message the message to set
-	 */
-	private void setNextMessage(int message) {
-		clearMessages();
-		animationHandler.sendEmptyMessage(message);
-	}
-
-	/**
-	 * Clears messages from queue
-	 */
-	private void clearMessages() {
-		animationHandler.removeMessages(MESSAGE_SCROLL);
-		animationHandler.removeMessages(MESSAGE_JUSTIFY);
-	}
-	
-	// animation handler
-	private Handler animationHandler = new Handler() {
-		public void handleMessage(Message msg) {
-			scroller.computeScrollOffset();
-			int currY = scroller.getCurrY();
-			int delta = lastScrollY - currY;
-			lastScrollY = currY;
-			if (delta != 0) {
-				doScroll(delta);
-			}
-			
-			// scrolling is not finished when it comes to final Y
-			// so, finish it manually 
-			if (Math.abs(currY - scroller.getFinalY()) < MIN_DELTA_FOR_SCROLLING) {
-				currY = scroller.getFinalY();
-				scroller.forceFinished(true);
-			}
-			if (!scroller.isFinished()) {
-				animationHandler.sendEmptyMessage(msg.what);
-			} else if (msg.what == MESSAGE_SCROLL) {
-				justify();
-			} else {
-				finishScrolling();
-			}
-		}
-	};
-	
-	/**
-	 * Justifies wheel
-	 */
-	private void justify() {
-		if (viewAdapter == null) {
-			return;
-		}
-		
-		lastScrollY = 0;
-		int offset = scrollingOffset;
-		int itemHeight = getItemHeight();
-		boolean needToIncrease = offset > 0 ? currentItem < viewAdapter.getItemsCount() : currentItem > 0; 
-		if ((isCyclic || needToIncrease) && Math.abs((float) offset) > (float) itemHeight / 2) {
-			if (offset < 0)
-				offset += itemHeight + MIN_DELTA_FOR_SCROLLING;
-			else
-				offset -= itemHeight + MIN_DELTA_FOR_SCROLLING;
-		}
-		if (Math.abs(offset) > MIN_DELTA_FOR_SCROLLING) {
-			scroller.startScroll(0, 0, 0, offset, SCROLLING_DURATION);
-			setNextMessage(MESSAGE_JUSTIFY);
-		} else {
-			finishScrolling();
-		}
-	}
-	
-	/**
-	 * Starts scrolling
-	 */
-	private void startScrolling() {
-		if (!isScrollingPerformed) {
-			isScrollingPerformed = true;
-			notifyScrollingListenersAboutStart();
-		}
-	}
-
-	/**
-	 * Finishes scrolling
-	 */
-	void finishScrolling() {
-		if (isScrollingPerformed) {
-			notifyScrollingListenersAboutEnd();
-			isScrollingPerformed = false;
-		}
-		
-		scrollingOffset = 0;
-		invalidate();
-	}
-	
-	
 	/**
 	 * Scroll the wheel
 	 * @param itemsToSkip items to scroll
 	 * @param time scrolling duration
 	 */
 	public void scroll(int itemsToScroll, int time) {
-		scroller.forceFinished(true);
-
-		lastScrollY = scrollingOffset;
-		int offset = itemsToScroll * getItemHeight();
-		
-		scroller.startScroll(0, lastScrollY, 0, offset - lastScrollY, time);
-		setNextMessage(MESSAGE_SCROLL);
-		
-		startScrolling();
+		int distance = itemsToScroll * getItemHeight() - scrollingOffset;
+        scroller.scroll(distance, time);
 	}
 	
 	/**
