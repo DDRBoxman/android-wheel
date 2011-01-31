@@ -4,6 +4,7 @@ import java.util.Calendar;
 
 import kankan.wheel.R;
 import kankan.wheel.widget.OnWheelChangedListener;
+import kankan.wheel.widget.OnWheelClickedListener;
 import kankan.wheel.widget.OnWheelScrollListener;
 import kankan.wheel.widget.WheelView;
 import kankan.wheel.widget.adapters.NumericWheelAdapter;
@@ -64,9 +65,16 @@ public class TimeActivity extends Activity {
 				}
 			}
 		};
-
 		hours.addChangingListener(wheelListener);
 		mins.addChangingListener(wheelListener);
+		
+		OnWheelClickedListener click = new OnWheelClickedListener() {
+            public void onItemClicked(WheelView wheel, int itemIndex) {
+                wheel.setCurrentItem(itemIndex, true);
+            }
+        };
+        hours.addClickingListener(click);
+        mins.addClickingListener(click);
 
 		OnWheelScrollListener scrollListener = new OnWheelScrollListener() {
 			public void onScrollingStarted(WheelView wheel) {

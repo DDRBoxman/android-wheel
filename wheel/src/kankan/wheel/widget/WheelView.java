@@ -117,6 +117,7 @@ public class WheelView extends View {
 	// Listeners
 	private List<OnWheelChangedListener> changingListeners = new LinkedList<OnWheelChangedListener>();
 	private List<OnWheelScrollListener> scrollingListeners = new LinkedList<OnWheelScrollListener>();
+    private List<OnWheelClickedListener> clickingListeners = new LinkedList<OnWheelClickedListener>();
 
 	/**
 	 * Constructor
@@ -365,6 +366,31 @@ public class WheelView extends View {
 			listener.onScrollingFinished(this);
 		}
 	}
+
+    /**
+     * Adds wheel clicking listener
+     * @param listener the listener 
+     */
+    public void addClickingListener(OnWheelClickedListener listener) {
+        clickingListeners.add(listener);
+    }
+
+    /**
+     * Removes wheel clicking listener
+     * @param listener the listener
+     */
+    public void removeClickingListener(OnWheelClickedListener listener) {
+        clickingListeners.remove(listener);
+    }
+    
+    /**
+     * Notifies listeners about clicking
+     */
+    protected void notifyClickListenersAboutClick(int item) {
+        for (OnWheelClickedListener listener : clickingListeners) {
+            listener.onItemClicked(this, item);
+        }
+    }
 
 	/**
 	 * Gets current value
@@ -764,7 +790,7 @@ public class WheelView extends View {
 		            }
 		            int items = distance / getItemHeight();
 		            if (items != 0 && isValidItemIndex(currentItem + items)) {
-                        scroll(items, 0);
+	                    notifyClickListenersAboutClick(currentItem + items);
 		            }
 		        }
 		        break;
