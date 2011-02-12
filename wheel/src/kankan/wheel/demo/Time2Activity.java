@@ -3,10 +3,11 @@ package kankan.wheel.demo;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Locale;
 
 import kankan.wheel.R;
 import kankan.wheel.widget.WheelView;
-import kankan.wheel.widget.adapters.AbstractWheelAdapter;
+import kankan.wheel.widget.adapters.AbstractWheelTextAdapter;
 import kankan.wheel.widget.adapters.ArrayWheelAdapter;
 import kankan.wheel.widget.adapters.NumericWheelAdapter;
 
@@ -14,6 +15,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.os.Bundle;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.TextView;
 
 public class Time2Activity extends Activity {
@@ -44,7 +46,7 @@ public class Time2Activity extends Activity {
         ampm.setViewAdapter(ampmAdapter);
     
         // set current time
-        Calendar calendar = Calendar.getInstance();
+        Calendar calendar = Calendar.getInstance(Locale.US);
         hours.setCurrentItem(calendar.get(Calendar.HOUR));
         mins.setCurrentItem(calendar.get(Calendar.MINUTE));
         ampm.setCurrentItem(calendar.get(Calendar.AM_PM));
@@ -57,7 +59,7 @@ public class Time2Activity extends Activity {
      * Day adapter
      *
      */
-    private class DayArrayAdapter extends AbstractWheelAdapter {
+    private class DayArrayAdapter extends AbstractWheelTextAdapter {
         // Count of days to be shown
         private final int daysCount = 20;
         
@@ -75,12 +77,12 @@ public class Time2Activity extends Activity {
         }
 
         @Override
-        public View getItem(int index, View cachedView) {
+        public View getItem(int index, View cachedView, ViewGroup parent) {
             int day = -daysCount/2 + index;
             Calendar newCalendar = (Calendar) calendar.clone();
             newCalendar.roll(Calendar.DAY_OF_YEAR, day);
             
-            View view = super.getItem(index, cachedView);
+            View view = super.getItem(index, cachedView, parent);
             TextView weekday = (TextView) view.findViewById(R.id.time2_weekday);
             if (day == 0) {
                 weekday.setText("");

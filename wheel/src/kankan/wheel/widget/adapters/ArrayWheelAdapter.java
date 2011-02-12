@@ -21,7 +21,7 @@ import android.content.Context;
  * The simple Array wheel adapter
  * @param <T> the element type
  */
-public class ArrayWheelAdapter<T> extends AbstractWheelAdapter {
+public class ArrayWheelAdapter<T> extends AbstractWheelTextAdapter {
     
     // items
     private T items[];

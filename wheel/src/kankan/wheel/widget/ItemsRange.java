@@ -28,7 +28,14 @@ public class ItemsRange {
 	
 	// Items count
 	private int count;
-	
+
+	/**
+	 * Default constructor. Creates an empty range
+	 */
+    public ItemsRange() {
+        this(0, 0);
+    }
+    
 	/**
 	 * Constructor
 	 * @param first the number of first item

@@ -28,14 +28,10 @@ public class TimeActivity extends Activity {
 	
 		final WheelView hours = (WheelView) findViewById(R.id.hour);
 		hours.setViewAdapter(new NumericWheelAdapter(this, 0, 23));
-		hours.setLabel("hours");
-		hours.setLabelWidth(72);
 	
 		final WheelView mins = (WheelView) findViewById(R.id.mins);
 		mins.setViewAdapter(new NumericWheelAdapter(this, 0, 59, "%02d"));
-		mins.setLabel("mins");
 		mins.setCyclic(true);
-		mins.setLabelWidth(72);
 	
 		final TimePicker picker = (TimePicker) findViewById(R.id.time);
 		picker.setIs24HourView(true);
@@ -110,7 +106,7 @@ public class TimeActivity extends Activity {
 	private void addChangingListener(final WheelView wheel, final String label) {
 		wheel.addChangingListener(new OnWheelChangedListener() {
 			public void onChanged(WheelView wheel, int oldValue, int newValue) {
-				wheel.setLabel(newValue != 1 ? label + "s" : label);
+				//wheel.setLabel(newValue != 1 ? label + "s" : label);
 			}
 		});
 	}

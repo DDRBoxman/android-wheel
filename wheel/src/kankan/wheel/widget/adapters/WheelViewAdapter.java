@@ -16,7 +16,9 @@
 
 package kankan.wheel.widget.adapters;
 
+import android.database.DataSetObserver;
 import android.view.View;
+import android.view.ViewGroup;
 
 /**
  * Wheel items adapter interface
@@ -32,33 +34,31 @@ public interface WheelViewAdapter {
 	 * Get a View that displays the data at the specified position in the data set
 	 * 
 	 * @param index the item index
-	 * @param cachedView the old view to reuse if possible
+	 * @param convertView the old view to reuse if possible
+	 * @param parent the parent that this view will eventually be attached to
 	 * @return the wheel item View
 	 */
-	public View getItem(int index, View cachedView);
+	public View getItem(int index, View convertView, ViewGroup parent);
 
 	/**
-	 * Get a View that displays an empty part of wheel
+	 * Get a View that displays an empty wheel item placed before the first or after
+	 * the last wheel item.
 	 * 
-	 * @param cachedView the old view to reuse if possible
-	 * @return the empty wheel item View
+	 * @param convertView the old view to reuse if possible
+     * @param parent the parent that this view will eventually be attached to
+	 * @return the empty item View
 	 */
-	public View getEmptyItem(View cachedView);
-
+	public View getEmptyItem(View convertView, ViewGroup parent);
+	
 	/**
-	 * Get a View that displays an empty part of wheel
-	 * 
-	 * @param cachedView the old view to reuse if possible
-	 * @return the wheel item View
+	 * Register an observer that is called when changes happen to the data used by this adapter.
+	 * @param observer the observer to be registered
 	 */
-	public View getEmptyExtendedItem(View cachedView);
-
+	public void registerDataSetObserver(DataSetObserver observer);
+	
 	/**
-	 * Get a View that displays the wheel label
-	 * 
-	 * @param label the wheel label
-	 * @param cachedView the old view to reuse if possible
-	 * @return the wheel item View
+	 * Unregister an observer that has previously been registered
+	 * @param observer the observer to be unregistered
 	 */
-	public View getLabelItem(String label, View cachedView);
+	void unregisterDataSetObserver (DataSetObserver observer);
 }

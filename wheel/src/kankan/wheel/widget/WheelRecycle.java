@@ -26,18 +26,14 @@ import android.view.View;
 import android.widget.LinearLayout;
 
 /**
- * Caching strategy stores wheel items to reuse. 
+ * Recycle stores wheel items to reuse. 
  */
-public class CachingStrategy {
-	
-	// Cached center view
-	private View labelView;
-	
+public class WheelRecycle {
 	// Cached items
-	private List<View> cachedItems;
+	private List<View> items;
 	
 	// Cached empty items
-	private List<View> cachedEmptyItems;
+	private List<View> emptyItems;
 	
 	// Wheel view
 	private WheelView wheel;
@@ -46,12 +42,12 @@ public class CachingStrategy {
 	 * Constructor
 	 * @param wheel the wheel view
 	 */
-	public CachingStrategy(WheelView wheel) {
+	public WheelRecycle(WheelView wheel) {
 		this.wheel = wheel;
 	}
 
 	/**
-	 * Caches items from specified layout.
+	 * Recycles items from specified layout.
 	 * There are saved only items not included to specified range.
 	 * All the cached items are removed from original layout.
 	 * 
@@ -60,11 +56,11 @@ public class CachingStrategy {
 	 * @param range the range of current wheel items 
 	 * @return the new value of first item number
 	 */
-	public int cacheItems(LinearLayout layout, int firstItem, ItemsRange range) {
+	public int recycleItems(LinearLayout layout, int firstItem, ItemsRange range) {
 		int index = firstItem;
 		for (int i = 0; i < layout.getChildCount();) {
 			if (!range.contains(index)) {
-				addViewToCache(layout.getChildAt(i), index);
+				recycleView(layout.getChildAt(i), index);
 				layout.removeViewAt(i);
 				if (i == 0) { // first item
 					firstItem++;
@@ -78,49 +74,31 @@ public class CachingStrategy {
 	}
 	
 	/**
-	 * Caches label view
-	 * @param view the view to be cached
-	 */
-	public void cacheLabelView(View view) {
-		labelView = view;
-	}
-	
-	/**
-	 * Gets cached label view
-	 * @return the cached view
-	 */
-	public View getCachedLabelView() {
-		return labelView;
-	}
-	
-	/**
 	 * Gets item view
 	 * @return the cached view
 	 */
-	public View getCachedItem() {
-		return getCachedView(cachedItems);
+	public View getItem() {
+		return getCachedView(items);
 	}
 
 	/**
 	 * Gets empty item view
 	 * @return the cached empty view
 	 */
-	public View getCachedEmptyItem() {
-		return getCachedView(cachedEmptyItems);
+	public View getEmptyItem() {
+		return getCachedView(emptyItems);
 	}
 	
 	/**
-	 * Clears all cached views 
+	 * Clears all views 
 	 */
-	public void clearCache() {
-		if (cachedItems != null) {
-			cachedItems.clear();
+	public void clearAll() {
+		if (items != null) {
+			items.clear();
 		}
-		if (cachedEmptyItems != null) {
-			cachedEmptyItems.clear();
+		if (emptyItems != null) {
+			emptyItems.clear();
 		}
-		
-		labelView = null;
 	}
 
 	/**
@@ -129,7 +107,7 @@ public class CachingStrategy {
 	 * @param cache the cache list
 	 * @return the cache list
 	 */
-	private List<View> addViewToCache(View view, List<View> cache) {
+	private List<View> addView(View view, List<View> cache) {
 		if (cache == null) {
 			cache = new LinkedList<View>();
 		}
@@ -143,18 +121,18 @@ public class CachingStrategy {
 	 * @param view the view to be cached
 	 * @param index the index of view
 	 */
-	private void addViewToCache(View view, int index) {
+	private void recycleView(View view, int index) {
 		int count = wheel.getViewAdapter().getItemsCount();
 
 		if ((index < 0 || index >= count) && !wheel.isCyclic()) {
 			// empty view
-			cachedEmptyItems = addViewToCache(view, cachedEmptyItems);
+			emptyItems = addView(view, emptyItems);
 		} else {
 			while (index < 0) {
 				index = count + index;
 			}
 			index %= count;
-			cachedItems = addViewToCache(view, cachedItems);
+			items = addView(view, items);
 		}
 	}
 	

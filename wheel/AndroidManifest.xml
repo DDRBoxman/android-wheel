@@ -49,12 +49,12 @@
                 <category android:name="kankan.wheel.WHEEL_SAMPLE"/>
             </intent-filter>
 		</activity>
-        <activity android:name="kankan.wheel.demo.SpeedActivity" android:label="Speed">
+        <!-- activity android:name="kankan.wheel.demo.SpeedActivity" android:label="Speed">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="kankan.wheel.WHEEL_SAMPLE"/>
             </intent-filter>
-        </activity>
+        </activity-->
 
     </application>
 

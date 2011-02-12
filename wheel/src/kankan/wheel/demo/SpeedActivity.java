@@ -9,8 +9,6 @@ import kankan.wheel.widget.adapters.NumericWheelAdapter;
 import android.app.Activity;
 import android.content.Context;
 import android.os.Bundle;
-import android.view.View;
-import android.widget.TextView;
 
 public class SpeedActivity extends Activity {
     @Override
@@ -21,7 +19,6 @@ public class SpeedActivity extends Activity {
         final WheelView speed = (WheelView) findViewById(R.id.speed);
         final SpeedAdapter speedAdapter = new SpeedAdapter(this, 245, 5);
         speed.setViewAdapter(speedAdapter);
-        speed.setLabel("           "); // for units
         
         final String unitsValues[] = new String[] {
                 "km/h",
@@ -35,11 +32,7 @@ public class SpeedActivity extends Activity {
         unitsAdapter.setItemResource(R.layout.units_item);
         unitsAdapter.setItemTextResource(R.id.text);
         unitsAdapter.setEmptyItemResource(R.layout.units_item);
-        unitsAdapter.setExtendedItemResource(R.layout.units_item);
-        unitsAdapter.setLabelResource(R.layout.wheel_text_item);
-        unitsAdapter.setLabelTextResource(R.id.text);
         units.setViewAdapter(unitsAdapter);
-        units.setLabel("units");
         //units.setVisibleItems(3);
         
         units.addChangingListener(new OnWheelChangedListener() {
@@ -58,8 +51,6 @@ public class SpeedActivity extends Activity {
      * Speed adapter
      */
     private class SpeedAdapter extends NumericWheelAdapter {
-        // Speed units
-        private String units;
         // Items step value
         private int step;
 
@@ -72,16 +63,13 @@ public class SpeedActivity extends Activity {
             
             setItemResource(R.layout.wheel_text_item);
             setItemTextResource(R.id.text);
-            setExtendedItemResource(R.layout.wheel_text_item);
-            setLabelResource(R.layout.wheel_text_item);
-            setLabelTextResource(R.id.text);
         }
         
         /**
          * Sets units
          */
         public void setUnits(String units) {
-            this.units = units;
+            //this.units = units;
         }
         
         @Override
@@ -91,15 +79,6 @@ public class SpeedActivity extends Activity {
                 return Integer.toString(value);
             }
             return null;
-        }
-        
-        @Override
-        public View getEmptyExtendedItem(View cachedView) {
-            View view = super.getEmptyExtendedItem(cachedView);
-            TextView text = (TextView) view.findViewById(R.id.text);
-            text.setText(units);
-            text.setTextColor(0xFF444444);
-            return view;
         }
     }
 }

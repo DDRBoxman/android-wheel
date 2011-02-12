@@ -24,7 +24,7 @@ import android.content.Context;
  * 
  * @deprecated Will be removed soon
  */
-public class AdapterWheel extends AbstractWheelAdapter {
+public class AdapterWheel extends AbstractWheelTextAdapter {
 
     // Source adapter
     private WheelAdapter adapter;

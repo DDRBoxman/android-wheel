@@ -13,6 +13,7 @@ import android.content.Context;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.TextView;
 
 public class DateActivity extends Activity {
@@ -94,9 +95,9 @@ public class DateActivity extends Activity {
         }
         
         @Override
-        public View getItem(int index, View cachedView) {
+        public View getItem(int index, View cachedView, ViewGroup parent) {
             currentItem = index;
-            return super.getItem(index, cachedView);
+            return super.getItem(index, cachedView, parent);
         }
     }
     
@@ -128,9 +129,9 @@ public class DateActivity extends Activity {
         }
         
         @Override
-        public View getItem(int index, View cachedView) {
+        public View getItem(int index, View cachedView, ViewGroup parent) {
             currentItem = index;
-            return super.getItem(index, cachedView);
+            return super.getItem(index, cachedView, parent);
         }
     }
 }

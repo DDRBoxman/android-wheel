@@ -4,13 +4,14 @@ import kankan.wheel.R;
 import kankan.wheel.widget.OnWheelChangedListener;
 import kankan.wheel.widget.OnWheelScrollListener;
 import kankan.wheel.widget.WheelView;
-import kankan.wheel.widget.adapters.AbstractWheelAdapter;
+import kankan.wheel.widget.adapters.AbstractWheelTextAdapter;
 import kankan.wheel.widget.adapters.ArrayWheelAdapter;
 
 import android.app.Activity;
 import android.content.Context;
 import android.os.Bundle;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ImageView;
 
 public class CitiesActivity extends Activity {
@@ -72,7 +73,7 @@ public class CitiesActivity extends Activity {
     /**
      * Adapter for countries
      */
-    private class CountryAdapter extends AbstractWheelAdapter {
+    private class CountryAdapter extends AbstractWheelTextAdapter {
         // Countries names
         private String countries[] =
             new String[] {"USA", "Canada", "Ukraine", "France"};
@@ -90,8 +91,8 @@ public class CitiesActivity extends Activity {
         }
 
         @Override
-        public View getItem(int index, View cachedView) {
-            View view = super.getItem(index, cachedView);
+        public View getItem(int index, View cachedView, ViewGroup parent) {
+            View view = super.getItem(index, cachedView, parent);
             ImageView img = (ImageView) view.findViewById(R.id.flag);
             img.setImageResource(flags[index]);
             return view;

@@ -1,17 +1,23 @@
 package kankan.wheel.demo;
 
+import java.lang.ref.SoftReference;
+import java.util.ArrayList;
+import java.util.List;
+
 import kankan.wheel.R;
 import kankan.wheel.widget.OnWheelChangedListener;
 import kankan.wheel.widget.OnWheelScrollListener;
 import kankan.wheel.widget.WheelView;
-import kankan.wheel.widget.adapters.WheelViewAdapter;
+import kankan.wheel.widget.adapters.AbstractWheelAdapter;
 import android.app.Activity;
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
-import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.View.OnClickListener;
-import android.view.animation.AnticipateOvershootInterpolator;
+import android.view.ViewGroup.LayoutParams;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -85,7 +91,6 @@ public class SlotMachineActivity extends Activity {
         wheel.addChangingListener(changedListener);
         wheel.addScrollingListener(scrolledListener);
         wheel.setCyclic(true);
-        wheel.setInterpolator(new AnticipateOvershootInterpolator());
     }
     
     /**
@@ -122,13 +127,17 @@ public class SlotMachineActivity extends Activity {
      */
     private void mixWheel(int id) {
         WheelView wheel = getWheel(id);
-        wheel.scroll(-25 + (int)(Math.random() * 50), 2000);
+        wheel.scroll(-350 + (int)(Math.random() * 50), 2000);
     }
     
     /**
      * Slot machine adapter
      */
-    private class SlotMachineAdapter implements WheelViewAdapter {
+    private class SlotMachineAdapter extends AbstractWheelAdapter {
+        // Image size
+        final int IMAGE_WIDTH = 60;
+        final int IMAGE_HEIGHT = 36;
+        
         // Slot machine symbols
         private final int items[] = new int[] {
                 android.R.drawable.star_big_on,
@@ -137,14 +146,31 @@ public class SlotMachineActivity extends Activity {
                 android.R.drawable.ic_delete
         };
         
+        // Cached images
+        private List<SoftReference<Bitmap>> images;
+        
         // Layout inflater
-        private LayoutInflater inflater;
+        private Context context;
         
         /**
          * Constructor
          */
         public SlotMachineAdapter(Context context) {
-            inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+            this.context = context;
+            images = new ArrayList<SoftReference<Bitmap>>(items.length);
+            for (int id : items) {
+                images.add(new SoftReference<Bitmap>(loadImage(id)));
+            }
+        }
+        
+        /**
+         * Loads image from resources
+         */
+        private Bitmap loadImage(int id) {
+            Bitmap bitmap = BitmapFactory.decodeResource(context.getResources(), id);
+            Bitmap scaled = Bitmap.createScaledBitmap(bitmap, IMAGE_WIDTH, IMAGE_HEIGHT, true);
+            bitmap.recycle();
+            return scaled;
         }
 
         @Override
@@ -152,34 +178,27 @@ public class SlotMachineActivity extends Activity {
             return items.length;
         }
 
+        // Layout params for image view
+        final LayoutParams params = new LayoutParams(IMAGE_WIDTH, IMAGE_HEIGHT);
+        
         @Override
-        public View getItem(int index, View cachedView) {
-            View layout;
+        public View getItem(int index, View cachedView, ViewGroup parent) {
+            ImageView img;
             if (cachedView != null) {
-                layout = cachedView;
+                img = (ImageView) cachedView;
             } else {
-                layout = inflater.inflate(R.layout.slot_item, null, false);
+                img = new ImageView(context);
             }
+            img.setLayoutParams(params);
+            SoftReference<Bitmap> bitmapRef = images.get(index);
+            Bitmap bitmap = bitmapRef.get();
+            if (bitmap == null) {
+                bitmap = loadImage(items[index]);
+                images.set(index, new SoftReference<Bitmap>(bitmap));
+            }
+            img.setImageBitmap(bitmap);
             
-            ImageView view = (ImageView) layout.findViewById(R.id.item);
-            view.setImageResource(items[index]);
-
-            return layout;
-        }
-
-        @Override
-        public View getEmptyItem(View cachedView) {
-            return null;
-        }
-
-        @Override
-        public View getEmptyExtendedItem(View cachedView) {
-            return null;
-        }
-
-        @Override
-        public View getLabelItem(String label, View cachedView) {
-            return null;
+            return img;
         }
     }
 }
