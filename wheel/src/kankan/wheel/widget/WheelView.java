@@ -23,7 +23,6 @@ import java.util.LinkedList;
 import java.util.List;
 
 import kankan.wheel.R;
-import kankan.wheel.widget.adapters.AdapterWheel;
 import kankan.wheel.widget.adapters.WheelViewAdapter;
 import android.content.Context;
 import android.database.DataSetObserver;
@@ -31,17 +30,12 @@ import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.GradientDrawable.Orientation;
-import android.os.Handler;
-import android.os.Message;
 import android.util.AttributeSet;
-import android.view.GestureDetector;
-import android.view.GestureDetector.SimpleOnGestureListener;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
 import android.view.animation.Interpolator;
 import android.widget.LinearLayout;
-import android.widget.Scroller;
 
 /**
  * Numeric wheel view.
@@ -172,28 +166,6 @@ public class WheelView extends View {
             }
         }
     };
-	
-    /**
-     * Gets wheel adapter
-     * @deprecated Use {@link getViewAdapter} instead
-     * @return the adapter
-     */
-    public WheelAdapter getAdapter() {
-        if (viewAdapter instanceof AdapterWheel) {
-            AdapterWheel adapter = (AdapterWheel) viewAdapter;
-            return adapter.getAdapter();
-        }
-        return null;
-    }
-    
-	/**
-     * Sets wheel adapter
-     * @deprecated Use {@link setViewAdapter} instead
-     * @param adapter the new wheel adapter
-     */
-    public void setAdapter(WheelAdapter adapter) {
-        setViewAdapter(new AdapterWheel(getContext(), adapter));
-    }
 	
 	/**
 	 * Set the the specified scrolling interpolator
