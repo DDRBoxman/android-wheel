@@ -91,6 +91,7 @@ public class SlotMachineActivity extends Activity {
         wheel.addChangingListener(changedListener);
         wheel.addScrollingListener(scrolledListener);
         wheel.setCyclic(true);
+        wheel.setEnabled(false);
     }
     
     /**

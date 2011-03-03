@@ -551,14 +551,13 @@ public class WheelView extends View {
 	protected void onDraw(Canvas canvas) {
 		super.onDraw(canvas);
 		
-		if (viewAdapter == null || viewAdapter.getItemsCount() == 0) {
-		    return;
+		if (viewAdapter != null && viewAdapter.getItemsCount() > 0) {
+	        updateView();
+
+	        drawItems(canvas);
+	        drawCenterRect(canvas);
 		}
 		
-		updateView();
-
-		drawItems(canvas);
-		drawCenterRect(canvas);
         drawShadows(canvas);
 	}
 
@@ -603,7 +602,7 @@ public class WheelView extends View {
 
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
-		if (getViewAdapter() == null) {
+		if (!isEnabled() || getViewAdapter() == null) {
 			return true;
 		}
 		
